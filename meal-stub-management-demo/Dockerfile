@@ -1,14 +1,16 @@
 
 FROM php:8.2-apache
 
-# Confirm SQLite extensions are available
+# Verify SQLite extensions
 RUN php -m | grep -qi '^pdo_sqlite$' \
     && php -m | grep -qi '^sqlite3$'
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
+# Enable only Apache prefork MPM
+RUN a2dismod mpm_event || true
+RUN a2dismod mpm_worker || true
+RUN a2enmod mpm_prefork rewrite
 
-# Block direct public access to the SQLite storage folder
+# Protect SQLite storage from public access
 RUN printf '<Directory /var/www/html/storage>\nOptions -Indexes\nAllowOverride None\nRequire all denied\n</Directory>\n' \
     > /etc/apache2/conf-available/deny-storage.conf \
     && a2enconf deny-storage
