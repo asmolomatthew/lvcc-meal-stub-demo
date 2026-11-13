@@ -1,13 +1,14 @@
 
 FROM php:8.2-apache
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
+# Confirm SQLite extensions are available
+RUN php -m | grep -qi '^pdo_sqlite$' \
+    && php -m | grep -qi '^sqlite3$'
 
+# Enable Apache rewrite
 RUN a2enmod rewrite
 
+# Block direct public access to the SQLite storage folder
 RUN printf '<Directory /var/www/html/storage>\nOptions -Indexes\nAllowOverride None\nRequire all denied\n</Directory>\n' \
     > /etc/apache2/conf-available/deny-storage.conf \
     && a2enconf deny-storage
